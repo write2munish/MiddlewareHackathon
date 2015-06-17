@@ -1,4 +1,4 @@
-package com.wipro;
+package com.philips;
 
 import java.sql.Timestamp;
 

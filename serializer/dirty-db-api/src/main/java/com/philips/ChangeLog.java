@@ -1,4 +1,4 @@
-package com.wipro;
+package com.philips;
 
 import static spark.Spark.get;
 import static spark.Spark.post;
