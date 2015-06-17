@@ -1,5 +1,17 @@
 package com.philips.healthtech.content;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.Random;
+import java.util.Scanner;
+
+import org.json.JSONObject;
+import org.json.XML;
+
 import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.document.PutItemOutcome;
@@ -10,51 +22,62 @@ import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.model.PutRecordRequest;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.amazonaws.services.lambda.runtime.RequestHandler;
-import com.amazonaws.services.lambda.runtime.events.S3Event;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.event.S3EventNotification;
-import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.services.s3.model.S3Object;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.json.JSONObject;
-import org.json.XML;
+import com.jayway.jsonpath.JsonPath;
 
-import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.Random;
-import java.util.Scanner;
+public class SourceDiff {
 
-public class SourceDiff implements RequestHandler<S3Event, String> {
-
-    AmazonS3 s3Client;
     AmazonKinesis kinesisClient;
     DynamoDB dynamodb;
 
-    LambdaLogger logger;
+    static LambdaLogger logger;
 
     public SourceDiff() {
         AWSClientProvider clientProvider = new AWSClientProvider();
-        s3Client = clientProvider.getS3Client();
+        //s3Client = clientProvider.getS3Client();
         kinesisClient = clientProvider.getKinesisClient();
         dynamodb = new DynamoDB(clientProvider.getDynamoDBClient());
     }
 
-    public String handleRequest(S3Event s3Event, Context context) {
+    public void handleRequest(InputStream recordContainerInputStream, OutputStream outputStream, Context context) {
         logger = context.getLogger();
-
-        for (S3EventNotification.S3EventNotificationRecord s3EventNotificationRecord : s3Event.getRecords()) {
-            String id = getId(s3EventNotificationRecord.getS3().getObject().getKey());
-            String xmlString = getXmlString(s3EventNotificationRecord);
-            String jsonString = getJsonString(xmlString);
-            SourceDelta sourceDelta = putOnDynamoDB(id, jsonString);
-            if(sourceDelta.isDifferent()) {
-                putOnKinesis(id, jsonString, sourceDelta);
-            }
-        }
-        return "ok";
+        logger.log("Start handle");
+        
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.setPropertyNamingStrategy(new MyNameStrategy());
+        RecordContainer recordContainer;
+		try {
+			recordContainer = mapper.readValue(recordContainerInputStream, RecordContainer.class);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+        
+        for (Record record : recordContainer.getRecords()) {
+        	logger.log("new image " + record.getDynamodb().getNewImage());
+        	try {
+				SourceDelta delta = new SourceDelta(mapper.writeValueAsString(record.getDynamodb().getOldImage()), mapper.writeValueAsString(record.getDynamodb().getNewImage()));
+				if(delta.isDifferent()) {
+					logger.log("keys: " + record.getDynamodb().getKeys().toString());
+					String id = JsonPath.read(record.getDynamodb().getKeys().toString(), "$.id.S");
+					String json = mapper.writeValueAsString(record.getDynamodb().getNewImage());
+					logger.log("Put on kinesis");
+					putOnKinesis(id, json, delta);
+					logger.log("id: " + id);
+					logger.log("json: " + json);
+				} else {
+					logger.log("Nothing changed");
+				}
+			} catch (JsonProcessingException e) {
+				throw new RuntimeException(e);
+			}
+		}
+        
+        try {
+			new OutputStreamWriter(outputStream).write("ok");
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
     }
 
     protected void putOnKinesis(String id, String jsonString, SourceDelta sourceDelta) {
@@ -64,7 +87,7 @@ public class SourceDiff implements RequestHandler<S3Event, String> {
         Random random = new Random();
 
         PutRecordRequest putRecordRequest = new PutRecordRequest()
-                .withStreamName("delta-to-canonical")
+                .withStreamName("delta-to-canonical2")
                 .withData(ByteBuffer.wrap(payload.getBytes()))
                 .withPartitionKey(Long.toString(random.nextLong()));
 
@@ -73,7 +96,7 @@ public class SourceDiff implements RequestHandler<S3Event, String> {
         logger.log("Kinesis record putted: " + payload);
     }
 
-    protected String getXmlString(S3EventNotification.S3EventNotificationRecord s3Notification){
+    /*protected String getXmlString(S3EventNotification.S3EventNotificationRecord s3Notification){
         String bucket = s3Notification.getS3().getBucket().getName();
         String key = s3Notification.getS3().getObject().getKey();
 
@@ -81,7 +104,7 @@ public class SourceDiff implements RequestHandler<S3Event, String> {
 
         S3Object xmlObject = s3Client.getObject(getObjectRequest);
         return streamToString(xmlObject.getObjectContent());
-    }
+    }*/
 
     protected String getJsonString(String xmlString){
         JSONObject xmlJSONObj = XML.toJSONObject(xmlString);
