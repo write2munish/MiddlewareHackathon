@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="Products">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="Product">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element type="xs:string" name="CTN"/>
+              <xs:element type="xs:int" name="DTN"/>
+              <xs:element name="NamingString">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="Family">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element type="xs:string" name="FamilyName"/>
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element name="Descriptor">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element type="xs:string" name="DescriptorName"/>
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+              <xs:element name="Feature" maxOccurs="unbounded" minOccurs="0">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element type="xs:string" name="FeatureCode"/>
+                    <xs:element type="xs:string" name="FeatureReferenceName"/>
+                    <xs:element type="xs:string" name="FeatureName"/>
+                    <xs:element type="xs:string" name="FeatureLongDescription"/>
+                    <xs:element type="xs:string" name="FeatureGlossary"/>
+                    <xs:element type="xs:byte" name="FeatureRank"/>
+                    <xs:element type="xs:byte" name="FeatureTopRank"/>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+              <xs:element name="CSItem">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="CSValue">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element type="xs:string" name="CSValueName"/>
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element name="UnitOfMeasure">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element type="xs:string" name="UnitOfMeasureName"/>
+                          <xs:element type="xs:string" name="UnitOfMeasureSymbol"/>
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+            <xs:attribute type="xs:string" name="Country"/>
+            <xs:attribute type="xs:string" name="Locale"/>
+            <xs:attribute type="xs:string" name="IsMaster"/>
+            <xs:attribute type="xs:string" name="IsAccessory"/>
+            <xs:attribute type="xs:dateTime" name="masterLastModified"/>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute type="xs:dateTime" name="DocTimeStamp"/>
+      <xs:attribute type="xs:string" name="DocStatus"/>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>
