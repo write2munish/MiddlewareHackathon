@@ -6,7 +6,6 @@ import static spark.Spark.post;
 import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Properties;
 
 import org.sql2o.Connection;
 import org.sql2o.Sql2o;
@@ -19,17 +18,14 @@ public class ChangeLog {
   
   static Sql2o sql2o;
   public static void main(String[] args) throws Exception {
-    System.out.println(gson.toJson(Arrays.asList(
-        new ChangeSet("PRD-HC781342","product","AA","en",new Timestamp(1434457386),12L),
-        new ChangeSet("PRD-HC781342","product","DE","de",new Timestamp(1434457350),1L),
-        new ChangeSet("FEA-100221","feature","AA","en",new Timestamp(1434457386),10L),
-        new ChangeSet("unece.unit.ppm","unit","AA","en",new Timestamp(1434457344),20L)
-        )));
-    System.out.println(gson.toJson(new ChangeSet("PRD-HC781342","product","DE","de",new Timestamp(1434457350),1L)));
-    Properties props = new Properties();
-    props.load(Thread.currentThread().getContextClassLoader().getResourceAsStream("jdbc.properties"));
-    sql2o = new Sql2o(props.getProperty("jdbc.url"),
-        props.getProperty("jdbc.user"), props.getProperty("jdbc.password"));
+    Arrays.asList("jdbc_url", "jdbc_user", "jdbc_password").forEach( s -> {
+     if ( System.getenv(s) == null ) {
+       System.err.println("Require " + s + " to be set from the environment");
+       System.exit(1);
+     }
+    });
+    sql2o = new Sql2o(System.getenv("jdbc_url"),
+        System.getenv("jdbc_user"), System.getenv("jdbc_password"));
     
     get("/list", "application/json", (req, res) -> {
       try (Connection conn = sql2o.open()) {
