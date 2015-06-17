@@ -11,6 +11,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>serializer/CanonicalAPIMock</module>
+	<module>serializer/dirty-db-api</module>
     </modules>
 
 </project>
