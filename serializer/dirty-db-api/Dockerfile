@@ -1,29 +1,19 @@
-#FROM williamyeh/java8
-FROM ubuntu
-MAINTAINER shyam
+FROM java:8 
 
-# add webupd8 repository
-RUN \
-    echo "===> add webupd8 repository..."  && \
-    echo "deb http://ppa.launchpad.net/webupd8team/java/ubuntu trusty main" | tee /etc/apt/sources.list.d/webupd8team-java.list  && \
-    echo "deb-src http://ppa.launchpad.net/webupd8team/java/ubuntu trusty main" | tee -a /etc/apt/sources.list.d/webupd8team-java.list  && \
-    apt-key adv --keyserver keyserver.ubuntu.com --recv-keys EEA14886  && \
-    apt-get update  && \
-    \
-    \
-    echo "===> install Java"  && \
-    echo debconf shared/accepted-oracle-license-v1-1 select true | debconf-set-selections  && \
-    echo debconf shared/accepted-oracle-license-v1-1 seen true | debconf-set-selections  && \
-    DEBIAN_FRONTEND=noninteractive  apt-get install -y --force-yes oracle-java8-installer oracle-java8-set-default  && \
+# Install maven
+RUN apt-get update
+RUN apt-get install -y maven
 
-RUN echo "install maven and git" && \
-    apt-get install -y maven git
-RUN echo "clone repository" && \
-    git clone https://github.com/write2munish/MiddlewareHackathon
+WORKDIR /code
 
-RUN echo "build" && \
-    cd MiddlewareHackathon/serializer/dirty-db-api && \
-    mvn package
+# Prepare by downloading dependencies
+ADD pom.xml pom.xml
+RUN ["mvn", "dependency:resolve"]
+RUN ["mvn", "verify"]
+
+# Adding source, compile and package into a fat jar
+ADD src /code/src
+RUN ["mvn", "package"]
 
 EXPOSE 4567
-CMD ["java", "-jar", "MiddlewareHackathon/serializer/dirty-db-api/target/dirty-db-api-1.0.jar"]
+CMD ["/usr/lib/jvm/java-8-openjdk-amd64/bin/java", "-jar", "target/dirty-db-api-1.0.jar"]
