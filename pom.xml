@@ -12,6 +12,7 @@
     <modules>
         <module>serializer/CanonicalAPIMock</module>
 	<module>serializer/dirty-db-api</module>
+	<module>source-lambda</module>
     </modules>
 
 </project>
