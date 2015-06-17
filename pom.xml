@@ -11,6 +11,9 @@
     <packaging>pom</packaging>
     <modules>
         <module>serializer/CanonicalAPIMock</module>
+	<module>serializer/dirty-db-api</module>
+	<module>source-lambda</module>
+	<module>canonical</module>
     </modules>
 
 </project>
