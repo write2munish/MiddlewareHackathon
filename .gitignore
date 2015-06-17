@@ -1,0 +1,5 @@
+target
+.settings
+/canonical/.classpath
+/canonical/.project
+/canonical/dependency-reduced-pom.xml
