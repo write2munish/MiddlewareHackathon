@@ -3,6 +3,7 @@ package com.philips;
 import java.sql.Timestamp;
 
 public class ChangeSet {
+  Long sno;
   String id;
   String type;
   String country;
