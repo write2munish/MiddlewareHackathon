@@ -5,7 +5,7 @@ import static spark.Spark.*;
 public class App {
 	public static void main(String[] args) {
 
-		// port(80);
+		port(8080);
 		get("/product/:product",
 				"application/json",
 				(req, res) -> {
