@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SERIALIZER: Health Systems Adobe CQ xUCDM - PMT export -->
+
+<!-- Setup: Every product object (PRD / CNS) per context (country + language) is a XML file. E.g. "en_AA_HC781342.xml" -->
+
+<Products DocTimeStamp="2015-03-20T18:38:36.7399349+01:00" DocStatus="draft" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<!-- DocTimeStamp is the dc.date.lastmodified. E.g. <dc.date.lastmodified>1427735500</dc.date.lastmodified>. Which is UNIX and need to be converted to UTC. -->
+	<!-- REMARK: Set all AWS servers to UTC timezone (Coordinated Universal Time) -->
+	<!-- DocStatus: HARDCODED -->
+	<!-- xmlns:xsi: HARDCODED -->
+
+	<Product Country="AA" Locale="en_AA" IsMaster="true" IsAccessory="false" masterLastModified="2015-03-20T18:38:36.7555603+01:00">
+		<!-- Country: metadata > dc.country. E,g, <dc.country>AA</dc.country> -->
+		<!-- Locale: metadata > dc.language & "_" & metadata > dc.country. E.g. <dc.language>en</dc.language> & "_" & <dc.country>AA</dc.country> -->
+		<!-- IsMaster: If locale is "en_AA" then TRUE else FALSE -->
+		<!-- IsAccessory: If metadata > dc.type.child = Accessory then TRUE else FALSE. E.g. <dc.type.child>Accessory</dc.type.child> -->
+		<!-- masterLastModified: dc.date.lastmodified and convert this to required date/time format -->
+
+		<CTN>HC781342</CTN>
+		<!-- codes > code > Type=PH-Code-CTN. E.g. <code type="PH-Code-CTN">HC795220</code>  -->
+
+		<DTN>781342</DTN>
+		<!-- codes > code > Type=PH-Code-DTN. E.g. <code type="PH-Code-DTN">795220</code>  -->
+		
+		<NamingString>
+
+			<Family>
+
+				<FamilyName>Ingenia</FamilyName>
+				<!-- name > concept. E.g. <concept>Ingenia</concept> -->
+
+			</Family>
+
+			<Descriptor>
+
+				<DescriptorName>MR system</DescriptorName>
+				<!-- name > descriptor. E.g. <descriptor>MR system</descriptor> -->
+
+			</Descriptor>
+
+		</NamingString>
+
+			<Feature>
+			<!-- Go back to product information and go to feature group > feature. E.g. <feature dc.country="AA" dc.language="en">FEA-100221</feature> -->
+
+				<FeatureCode>FEA-100221</FeatureCode>
+				<!-- features > feature group > feature dc.identifier. E.g. ID="FEA-100221". E.g. <feature dc.country="AA" dc.language="en">FEA-100221</feature> -->
+
+				<!-- Per Feature, lookup the feature information of dc.identifier="FEA-100221" dc.country="AA" dc.language="en". -->
+
+				<FeatureReferenceName>dStream</FeatureReferenceName>
+				<!-- name. E.g. <name>dStream</name> -->
+
+				<FeatureName>dStream</FeatureName>
+				<!-- name. E.g. <name>dStream</name> -->
+
+				<FeatureLongDescription>dStream</FeatureLongDescription>
+				<!-- description. E.g. <description>dStream</description> -->
+
+				<FeatureGlossary>dStream enables you to get information, consistently in the same time by delivering premium image quality with digital clarity and speed.*</FeatureGlossary>
+				<!-- glossary. E.g. <glossary>dStream enables you to get information, consistently in the same time by delivering premium image quality with digital clarity and speed.*</glossary> -->
+
+				<FeatureRank>1</FeatureRank>
+				<!-- rank. E.g. <rank>1</rank> -->
+
+				<FeatureTopRank>1</FeatureTopRank>
+				<!-- rank. E.g. <rank>1</rank> -->
+
+			</Feature>
+
+			<Feature>
+				<FeatureCode>FEA-100222</FeatureCode>
+				<FeatureReferenceName>EasyExpand</FeatureReferenceName>
+				<FeatureName>EasyExpand</FeatureName>
+				<FeatureLongDescription>Advanced MR</FeatureLongDescription>
+				<FeatureGlossary>From routine studies to emerging applications Ingenia's explorative tools and advanced diagnostic solutions increase the imaging capabilities of MR by addressing the major healthcare trends in neurology, oncology and cardiology.</FeatureGlossary>
+				<FeatureRank>3</FeatureRank>
+				<FeatureTopRank>4</FeatureTopRank>
+			</Feature>
+
+			<CSItem>
+				<CSValue>
+					<CSValueName>≤ 1.1</CSValueName>
+				</CSValue>
+				<UnitOfMeasure>
+					<UnitOfMeasureName>parts per million</UnitOfMeasureName>
+					<UnitOfMeasureSymbol>ppm</UnitOfMeasureSymbol>
+				</UnitOfMeasure>
+			</CSItem>
+	</Product>
+
+</Products>
