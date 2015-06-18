@@ -24,19 +24,19 @@ import com.philips.jaxb.Products;
 import com.philips.jaxb.Products.Product.Feature;
 
 public class XUCDMSerializer implements Serializer {
-
+  
   String dirtyBaseUri;
   String canonicalBaseUri;
   ObjectFactory factory;
   Resty resty;
   AmazonS3 s3client;
-
+  
   public XUCDMSerializer(String dirtyBaseUri, String canonicalBaseUri) {
     this.dirtyBaseUri = dirtyBaseUri;
     this.canonicalBaseUri = canonicalBaseUri;
     factory = new ObjectFactory();
     resty = new Resty();
-    s3client = new AmazonS3Client(new ProfileCredentialsProvider());
+    s3client = new AmazonS3Client(new ProfileCredentialsProvider());        
   }
 
   JSONObject getObject(JSONObject root, String path) throws JSONException {
@@ -67,13 +67,13 @@ public class XUCDMSerializer implements Serializer {
     JSONArray arr = getObject(root, "product.codes").getJSONArray("code");
     product.setDTN(findText(arr, "PH-Code-DTN"));
     product.setCTN(findText(arr, "PH-Code-CTN"));
-
+    
     product.setNamingString(factory.createProductsProductNamingString());
     product.getNamingString().setDescriptor(factory.createProductsProductNamingStringDescriptor());
     product.getNamingString().getDescriptor().setDescriptorName(getObject(root, "product.name").getString("descriptor"));
     product.getNamingString().setFamily(factory.createProductsProductNamingStringFamily());
     product.getNamingString().getFamily().setFamilyName(getObject(root, "product.name").getString("concept"));
-
+    
     arr = getObject(root, "product.features").getJSONArray("feature");
     for ( int i = 0; i < arr.length(); i++ ) {
       obj = arr.getJSONObject(i);
@@ -90,7 +90,7 @@ public class XUCDMSerializer implements Serializer {
       product.getFeature().add(feature);
     }
   }
-
+  
   @Override
   public String serialize(Long since, String country, String language)  throws Exception {
     if ( since < 0 || country == null || language == null ) {
@@ -102,22 +102,29 @@ public class XUCDMSerializer implements Serializer {
     int count = 0;
     for ( int i = 0; i < productArr.length(); i++ ) {
       JSONObject obj = productArr.getJSONObject(i);
-      if ( "product".equalsIgnoreCase(obj.getString("type")) && language.equalsIgnoreCase(obj.getString("language")) && country.equalsIgnoreCase(obj.getString("country")) ) {
-        addProduct(products, obj.getString("id"), queryString);
-        count++;
+      if ( "product".equals(obj.getString("type")) && language.equalsIgnoreCase(obj.getString("language")) && country.equalsIgnoreCase(obj.getString("country")) ) {
+        try {
+          addProduct(products, obj.getString("id"), queryString);
+          count++;
+        } catch (Exception e) {
+          System.err.println("Failed to add product to xml because of missing json attributes");
+        }
       }
     }
-
+    
     System.out.printf("Processed %d products\n", count);
-
-    JAXBContext ctx = JAXBContext.newInstance(Products.class);
-    Marshaller m = ctx.createMarshaller();
-    m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
-    StringWriter writer = new StringWriter();
-    m.marshal(products, writer);
-    return writer.toString();
+    
+    if ( count > 0 ) {
+      JAXBContext ctx = JAXBContext.newInstance(Products.class);
+      Marshaller m = ctx.createMarshaller();
+      m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
+      StringWriter writer = new StringWriter();
+      m.marshal(products, writer);
+      return writer.toString();
+    }
+    return null;
   }
-
+  
   void writeToS3(String bucket, String keyName, String content) {
     ObjectMetadata omd = new ObjectMetadata();
     omd.setContentType("application/xml");
@@ -126,7 +133,7 @@ public class XUCDMSerializer implements Serializer {
     PutObjectResult result = s3client.putObject(new PutObjectRequest(bucket, "serializer-output/" + keyName, new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)), omd));
     System.out.printf("uploaded %s (MD5: %s) to S3 bucket (%s)\n", keyName, result.getContentMd5(), bucket);
   }
-
+  
   public static void main(String[] args) throws Exception {
     if ( args.length < 5 ) {
       System.err.println("Usage: XUCDMSerializer <dirty-db-api-base-uri> <canonical-api-base-uri> <changes-since-ms> <country> <language>");
@@ -137,7 +144,7 @@ public class XUCDMSerializer implements Serializer {
       if ( null != out && !"".equals(out.trim()) ) {
         serializer.writeToS3("philips-cloud-tst", String.format("%d.xml", System.currentTimeMillis()), out);
       }
-      Thread.sleep(1000L);
+      Thread.sleep(5000L);
     }
   }
 }
