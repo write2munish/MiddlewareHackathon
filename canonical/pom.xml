@@ -43,9 +43,16 @@
 			<artifactId>gson</artifactId>
 			<version>2.3.1</version>
 		</dependency>
-
-
-
+		<dependency>
+			<groupId>us.monoid.web</groupId>
+			<artifactId>resty</artifactId>
+			<version>0.3.1</version>
+		</dependency>
+		<dependency>
+			<groupId>com.wipro</groupId>
+			<artifactId>dirty-db-api</artifactId>
+			<version>1.0</version>
+		</dependency>
 	</dependencies>
 	<build>
 		<plugins>

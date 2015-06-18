@@ -34,6 +34,37 @@ public class App {
 							res.body("{'product':{'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance','dc.identifier':'PRD-HC795080','metadata':{'dc.country':'DE','dc.language':'de'},'codes':{'code':[{'type':'PH-Code-CTN','text':'HC795080'},{'type':'PH-Code-DTN','text':'795080'}]},'name':{'descriptor':'Ultraschallsystem','concept':'ClearVue'},'marketingtext':{'header':'Das ClearVue 350 mit Active Array Technologie bietet Philips Qualität auf ganzer Linie und sorgt mit einer hohen Bildqualität und ausgereiften, einfach anzuwendenden Funktionen für eine Erhöhung der Diagnosesicherheit und für Verbesserungen bei der Benutzerfreundlichkeit und Zuverlässigkeit.'},'features':{'feature':{'dc.country':'DE','dc.language':'de','rank':'3','text':'FEA-100222'}}}}");
 							return res.body();
 						}
+
+
+					case "PRD-HC805181":
+						switch (lang.toLowerCase()) {
+						case "en":
+							res.body("{'product':{'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance','dc.identifier':'PRD-HC805181','metadata':{'dc.country':'AA','dc.language':'en'},'codes':{'code':[{'type':'PH-Code-CTN','text':'HC795080'},{'type':'PH-Code-DTN','text':'795080'}]},'name':{'descriptor':'Ultrasound system','concept':'ClearVue'},'marketingtext':{'header':'With Philips quality imaging through and through, the ClearVue 350 with Active Array technology offers image quality designed to enhance diagnostic confidence, sophisticated yet simple features, and advances in ease of use and reliability.'},'features':{'feature':{'dc.country':'AA','dc.language':'en','rank':'3','text':'FEA-100222'}}}}");
+							return res.body();
+						case "de":
+							res.body("{'product':{'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance','dc.identifier':'PRD-HC805181','metadata':{'dc.country':'DE','dc.language':'de'},'codes':{'code':[{'type':'PH-Code-CTN','text':'HC795080'},{'type':'PH-Code-DTN','text':'795080'}]},'name':{'descriptor':'Ultraschallsystem','concept':'ClearVue'},'marketingtext':{'header':'Das ClearVue 350 mit Active Array Technologie bietet Philips Qualität auf ganzer Linie und sorgt mit einer hohen Bildqualität und ausgereiften, einfach anzuwendenden Funktionen für eine Erhöhung der Diagnosesicherheit und für Verbesserungen bei der Benutzerfreundlichkeit und Zuverlässigkeit.'},'features':{'feature':{'dc.country':'DE','dc.language':'de','rank':'3','text':'FEA-100222'}}}}");
+							return res.body();
+						}
+
+					case "PRD-HC905292":
+						switch (lang.toLowerCase()) {
+						case "en":
+							res.body("{'product':{'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance','dc.identifier':'PRD-HC905292','metadata':{'dc.country':'AA','dc.language':'en'},'codes':{'code':[{'type':'PH-Code-CTN','text':'HC795080'},{'type':'PH-Code-DTN','text':'795080'}]},'name':{'descriptor':'Ultrasound system','concept':'ClearVue'},'marketingtext':{'header':'With Philips quality imaging through and through, the ClearVue 350 with Active Array technology offers image quality designed to enhance diagnostic confidence, sophisticated yet simple features, and advances in ease of use and reliability.'},'features':{'feature':{'dc.country':'AA','dc.language':'en','rank':'3','text':'FEA-100222'}}}}");
+							return res.body();
+						case "de":
+							res.body("{'product':{'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance','dc.identifier':'PRD-HC905292','metadata':{'dc.country':'DE','dc.language':'de'},'codes':{'code':[{'type':'PH-Code-CTN','text':'HC795080'},{'type':'PH-Code-DTN','text':'795080'}]},'name':{'descriptor':'Ultraschallsystem','concept':'ClearVue'},'marketingtext':{'header':'Das ClearVue 350 mit Active Array Technologie bietet Philips Qualität auf ganzer Linie und sorgt mit einer hohen Bildqualität und ausgereiften, einfach anzuwendenden Funktionen für eine Erhöhung der Diagnosesicherheit und für Verbesserungen bei der Benutzerfreundlichkeit und Zuverlässigkeit.'},'features':{'feature':{'dc.country':'DE','dc.language':'de','rank':'3','text':'FEA-100222'}}}}");
+							return res.body();
+						}					
+
+					case "PRD-HC925394":
+						switch (lang.toLowerCase()) {
+						case "en":
+							res.body("{'product':{'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance','dc.identifier':'PRD-HC925394','metadata':{'dc.country':'AA','dc.language':'en'},'codes':{'code':[{'type':'PH-Code-CTN','text':'HC795080'},{'type':'PH-Code-DTN','text':'795080'}]},'name':{'descriptor':'Ultrasound system','concept':'ClearVue'},'marketingtext':{'header':'With Philips quality imaging through and through, the ClearVue 350 with Active Array technology offers image quality designed to enhance diagnostic confidence, sophisticated yet simple features, and advances in ease of use and reliability.'},'features':{'feature':{'dc.country':'AA','dc.language':'en','rank':'3','text':'FEA-100222'}}}}");
+							return res.body();
+						case "de":
+							res.body("{'product':{'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance','dc.identifier':'PRD-HC925394','metadata':{'dc.country':'DE','dc.language':'de'},'codes':{'code':[{'type':'PH-Code-CTN','text':'HC795080'},{'type':'PH-Code-DTN','text':'795080'}]},'name':{'descriptor':'Ultraschallsystem','concept':'ClearVue'},'marketingtext':{'header':'Das ClearVue 350 mit Active Array Technologie bietet Philips Qualität auf ganzer Linie und sorgt mit einer hohen Bildqualität und ausgereiften, einfach anzuwendenden Funktionen für eine Erhöhung der Diagnosesicherheit und für Verbesserungen bei der Benutzerfreundlichkeit und Zuverlässigkeit.'},'features':{'feature':{'dc.country':'DE','dc.language':'de','rank':'3','text':'FEA-100222'}}}}");
+							return res.body();
+						}	
 					default:
 						res.status(401);
 						res.body("Wrong ID, Try /PRD-HC781342?country=DE&language=DE");
@@ -67,6 +98,37 @@ public class App {
 							res.body("{'feature':{'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance','dc.identifier':'FEA-100222','metadata':{'dc.country':'AA','dc.language':'en'},'name':'dStream','description':'dStream','glossary':'dStream enables you to get information, consistently in the same time by delivering premium image quality with digital clarity and speed.*','rank':'1'}}");
 							return res.body();
 						}	
+						
+					case "FEA-100224":
+						switch (lang.toLowerCase()) {
+						case "de":
+							res.body("{'feature':{'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance','dc.identifier':'FEA-100224','metadata':{'dc.country':'DE','dc.language':'de'},'name':'dStream','description':'Schnell und zuverlässig','glossary':'Mit dStream erhalten Sie in kürzester Zeit erstklassige digitale MR-Bilder mit gleichbleibend hoher Bildqualität und diagnostischer Aussagekraft.','rank':'1'}}");
+							return res.body();
+						case "en":
+							res.body("{'feature':{'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance','dc.identifier':'FEA-100224','metadata':{'dc.country':'AA','dc.language':'en'},'name':'dStream','description':'dStream','glossary':'dStream enables you to get information, consistently in the same time by delivering premium image quality with digital clarity and speed.*','rank':'1'}}");
+							return res.body();
+						}	
+						
+					case "FEA-100226":
+						switch (lang.toLowerCase()) {
+						case "de":
+							res.body("{'feature':{'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance','dc.identifier':'FEA-100226','metadata':{'dc.country':'DE','dc.language':'de'},'name':'dStream','description':'Schnell und zuverlässig','glossary':'Mit dStream erhalten Sie in kürzester Zeit erstklassige digitale MR-Bilder mit gleichbleibend hoher Bildqualität und diagnostischer Aussagekraft.','rank':'1'}}");
+							return res.body();
+						case "en":
+							res.body("{'feature':{'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance','dc.identifier':'FEA-100226','metadata':{'dc.country':'AA','dc.language':'en'},'name':'dStream','description':'dStream','glossary':'dStream enables you to get information, consistently in the same time by delivering premium image quality with digital clarity and speed.*','rank':'1'}}");
+							return res.body();
+						}	
+						
+					case "FEA-100228":
+						switch (lang.toLowerCase()) {
+						case "de":
+							res.body("{'feature':{'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance','dc.identifier':'FEA-100228','metadata':{'dc.country':'DE','dc.language':'de'},'name':'dStream','description':'Schnell und zuverlässig','glossary':'Mit dStream erhalten Sie in kürzester Zeit erstklassige digitale MR-Bilder mit gleichbleibend hoher Bildqualität und diagnostischer Aussagekraft.','rank':'1'}}");
+							return res.body();
+						case "en":
+							res.body("{'feature':{'xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance','dc.identifier':'FEA-100228','metadata':{'dc.country':'AA','dc.language':'en'},'name':'dStream','description':'dStream','glossary':'dStream enables you to get information, consistently in the same time by delivering premium image quality with digital clarity and speed.*','rank':'1'}}");
+							return res.body();
+						}	
+						
 					default:
 						res.status(401);
 						res.body("Wrong ID, Try - /FEA-100221?country=DE&language=DE");
