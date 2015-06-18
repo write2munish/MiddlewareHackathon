@@ -45,12 +45,12 @@ public class ChangeLog {
       }
     }, new JsonTransformer());
     
-    get("/changelog", (req, res) -> {
+    get("/logchange", (req, res) -> {
       res.status(400);
       return "Sorry only post supported";
     });
     
-    post("/changelog", "application/json", (req, res) -> {
+    post("/logchange", "application/json", (req, res) -> {
       ChangeSet object = gson.fromJson(req.body(), ChangeSet.class);
       try (Connection conn = sql2o.beginTransaction()) {
         conn.createQuery("insert into dirty_list(id, type, country, language, lastmodified, sequencenumber) VALUES (:id, :type, :country, :language, :lastmodified, :sequencenumber)")
