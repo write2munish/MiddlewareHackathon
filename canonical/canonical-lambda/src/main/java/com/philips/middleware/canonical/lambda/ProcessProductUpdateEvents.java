@@ -1,4 +1,4 @@
-package com.philips.middleware.lambda;
+package com.philips.middleware.canonical.lambda;
 
 import java.io.IOException;
 import java.util.Date;
