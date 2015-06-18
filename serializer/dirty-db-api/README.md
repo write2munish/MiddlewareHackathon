@@ -13,4 +13,4 @@ DirtyDB API relys on environment variables to connect to its database. So it req
 Environment variables for connecting to the RDS instance and the port number needs to be updated in the Dockerfile before it can be run
     docker build -t dirtydb .
 
-    docker run -p 4567:9999 dirtydb
+    docker run -p 8080:8080 dirtydb
