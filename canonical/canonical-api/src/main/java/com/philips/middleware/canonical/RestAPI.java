@@ -9,6 +9,13 @@ public class RestAPI {
 
 		final CanonicalService canonicalService = new CanonicalService();
 		final Gson gson = new Gson();
+		
+		get("health-check", 
+				"application/json",
+				(req, res) -> {
+					res.body("Healthy");
+					return res.body();
+				});
 
 		get("/product/:productid",
 				"application/json",
