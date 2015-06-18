@@ -1,10 +1,9 @@
 package com.philips.middleware.canonical;
 
-import static spark.Spark.*;
-
-import com.philips.middleware.canonical.CanonicalDAO;
 import com.google.gson.Gson;
 import spark.servlet.SparkApplication;
+
+import static spark.Spark.get;
 
 public class RestInterface implements SparkApplication {
 
@@ -31,7 +30,7 @@ public class RestInterface implements SparkApplication {
                     System.out.println("You're requesting product " + productId
                             + " for country " + country + " in language "
                             + language);
-                    res.body(canonicalService.getProductForId(productId, language, country));
+                    res.body(canonicalService.getProductForId(productId));
                     return res.body();
                 });
 
@@ -44,7 +43,7 @@ public class RestInterface implements SparkApplication {
                     System.out.println("You're requesting feature " + featureId
                             + " for country " + country + " in language "
                             + language);
-                    res.body(canonicalService.getFeatureForId(featureId, language, country));
+                    res.body(canonicalService.getFeatureForId(featureId));
                     return res.body();
                 });
 

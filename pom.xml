@@ -16,6 +16,7 @@
 	<module>serializer/xucdm-serializer</module>
         <module>source-lambda</module>
     	<module>canonical</module>
+    	<module>productpage-renderer</module>
     </modules>
 
 </project>

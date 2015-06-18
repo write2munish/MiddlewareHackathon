@@ -1,0 +1,7 @@
+<html><body><p>${debug}</p><p>
+<ul>
+#foreach($feature in ${util.features})
+<li>${feature}</li>
+#end
+</ul>
+</p></body>/html>
