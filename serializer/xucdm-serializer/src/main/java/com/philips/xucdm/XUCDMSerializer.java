@@ -1,12 +1,16 @@
 package com.philips.xucdm;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.Marshaller;
+
+import org.apache.commons.io.FileUtils;
 
 import us.monoid.json.JSONArray;
 import us.monoid.json.JSONException;
@@ -102,12 +106,13 @@ public class XUCDMSerializer implements Serializer {
     int count = 0;
     for ( int i = 0; i < productArr.length(); i++ ) {
       JSONObject obj = productArr.getJSONObject(i);
-      if ( "product".equals(obj.getString("type")) && language.equalsIgnoreCase(obj.getString("language")) && country.equalsIgnoreCase(obj.getString("country")) ) {
+      if ( ("prd".equalsIgnoreCase(obj.getString("type")) || "product".equalsIgnoreCase(obj.getString("type"))) && language.equalsIgnoreCase(obj.getString("language")) && country.equalsIgnoreCase(obj.getString("country")) ) {
         try {
           addProduct(products, obj.getString("id"), queryString);
           count++;
         } catch (Exception e) {
           System.err.println("Failed to add product to xml because of missing json attributes");
+          e.printStackTrace();
         }
       }
     }
@@ -125,12 +130,14 @@ public class XUCDMSerializer implements Serializer {
     return null;
   }
   
-  void writeToS3(String bucket, String keyName, String content) {
+  void writeToS3(String bucket, String keyName, String content) throws IOException {
     ObjectMetadata omd = new ObjectMetadata();
     omd.setContentType("application/xml");
     omd.setContentLength(content.length());
     omd.setHeader("filename", keyName);
-    PutObjectResult result = s3client.putObject(new PutObjectRequest(bucket, "serializer-output/" + keyName, new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)), omd));
+    File file = File.createTempFile("xUCDM", ".xml");
+    FileUtils.write(file, content);
+    PutObjectResult result = s3client.putObject(new PutObjectRequest(bucket, "serializer-output/" + keyName, file));
     System.out.printf("uploaded %s (MD5: %s) to S3 bucket (%s)\n", keyName, result.getContentMd5(), bucket);
   }
   
@@ -140,7 +147,7 @@ public class XUCDMSerializer implements Serializer {
     }
     while ( true ) {
       XUCDMSerializer serializer = new XUCDMSerializer(args[0], args[1]);
-      String out = serializer.serialize(System.currentTimeMillis() - (60 * 1000L), args[3], args[4]);
+      String out = serializer.serialize(System.currentTimeMillis() - (1 * 60 * 60 * 1000L), args[3], args[4]);
       if ( null != out && !"".equals(out.trim()) ) {
         serializer.writeToS3("philips-cloud-tst", String.format("%d.xml", System.currentTimeMillis()), out);
       }
