@@ -176,7 +176,7 @@ public class Products {
      *     
      */
     public void setProduct(Products.Product value) {
-        this.product = value;
+      this.product = value;
     }
 
     /**
@@ -344,6 +344,18 @@ public class Products {
         "csItem"
     })
     public static class Product {
+      
+      @XmlAttribute(name = "dc.identifier", required = true)
+      protected String id;
+
+        public String getId() {
+        return id;
+      }
+
+      public void setId(String id) {
+        this.id = id;
+      }
+
 
         @XmlElement(name = "CTN", required = true)
         protected String ctn;

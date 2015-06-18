@@ -1,10 +1,8 @@
 package com.philips.xucdm;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
-import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
 import javax.xml.bind.JAXBContext;
@@ -63,6 +61,7 @@ public class XUCDMSerializer implements Serializer {
     products.setDocTimeStamp(new Date(System.currentTimeMillis()));
     products.setDocStatus("draft");
     Products.Product product = factory.createProductsProduct();
+    product.setId(productId);
     products.setProduct(product);
     JSONObject obj = getObject(root, "product.attributes.attribute");
     product.setCountry(obj.getString("dc.country"));
@@ -96,19 +95,30 @@ public class XUCDMSerializer implements Serializer {
   }
   
   @Override
-  public String serialize(Long since, String country, String language)  throws Exception {
+  public void serialize(Long since, String country, String language)  throws Exception {
     if ( since < 0 || country == null || language == null ) {
       throw new IllegalArgumentException("since/country/language are null or negative");
     }
     JSONArray productArr = resty.json(dirtyBaseUri + "/list/" + since).array();
-    Products products = factory.createProducts();
     String queryString = String.format("?country=%s&language=%s", country, language);
     int count = 0;
     for ( int i = 0; i < productArr.length(); i++ ) {
       JSONObject obj = productArr.getJSONObject(i);
       if ( ("prd".equalsIgnoreCase(obj.getString("type")) || "product".equalsIgnoreCase(obj.getString("type"))) && language.equalsIgnoreCase(obj.getString("language")) && country.equalsIgnoreCase(obj.getString("country")) ) {
         try {
+          System.out.printf("Trying to add product %s\n", obj.getString("id"));
+          Products products = factory.createProducts();
           addProduct(products, obj.getString("id"), queryString);
+          JAXBContext ctx = JAXBContext.newInstance(Products.class);
+          Marshaller m = ctx.createMarshaller();
+          m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
+          StringWriter writer = new StringWriter();
+          m.marshal(products, writer);
+          writer.toString();
+          String out = writer.toString();
+          if ( null != out && !"".equals(out.trim()) ) {
+            writeToS3("philips-cloud-tst", String.format("%d.xml", System.currentTimeMillis()), out);
+          }
           count++;
         } catch (Exception e) {
           System.err.println("Failed to add product to xml because of missing json attributes");
@@ -116,18 +126,7 @@ public class XUCDMSerializer implements Serializer {
         }
       }
     }
-    
     System.out.printf("Processed %d products\n", count);
-    
-    if ( count > 0 ) {
-      JAXBContext ctx = JAXBContext.newInstance(Products.class);
-      Marshaller m = ctx.createMarshaller();
-      m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
-      StringWriter writer = new StringWriter();
-      m.marshal(products, writer);
-      return writer.toString();
-    }
-    return null;
   }
   
   void writeToS3(String bucket, String keyName, String content) throws IOException {
@@ -147,10 +146,7 @@ public class XUCDMSerializer implements Serializer {
     }
     while ( true ) {
       XUCDMSerializer serializer = new XUCDMSerializer(args[0], args[1]);
-      String out = serializer.serialize(System.currentTimeMillis() - (1 * 60 * 60 * 1000L), args[3], args[4]);
-      if ( null != out && !"".equals(out.trim()) ) {
-        serializer.writeToS3("philips-cloud-tst", String.format("%d.xml", System.currentTimeMillis()), out);
-      }
+      serializer.serialize(System.currentTimeMillis() - (1 * 60 * 60 * 1000L), args[3], args[4]);
       Thread.sleep(5000L);
     }
   }
