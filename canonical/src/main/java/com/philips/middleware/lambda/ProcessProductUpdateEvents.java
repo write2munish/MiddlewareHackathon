@@ -1,4 +1,4 @@
-package nl.hackathon.canonicaldb;
+package com.philips.middleware.lambda;
 
 import java.io.IOException;
 import java.util.Date;
