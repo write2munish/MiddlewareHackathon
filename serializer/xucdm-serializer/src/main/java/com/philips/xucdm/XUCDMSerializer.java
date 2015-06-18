@@ -102,7 +102,7 @@ public class XUCDMSerializer implements Serializer {
     int count = 0;
     for ( int i = 0; i < productArr.length(); i++ ) {
       JSONObject obj = productArr.getJSONObject(i);
-      if ( "product".equals(obj.getString("type")) && language.equalsIgnoreCase(obj.getString("language")) && country.equalsIgnoreCase(obj.getString("country")) ) {
+      if ( "product".equalsIgnoreCase(obj.getString("type")) && language.equalsIgnoreCase(obj.getString("language")) && country.equalsIgnoreCase(obj.getString("country")) ) {
         addProduct(products, obj.getString("id"), queryString);
         count++;
       }
