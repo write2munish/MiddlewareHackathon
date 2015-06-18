@@ -17,6 +17,7 @@ public class ChangeLog {
   
   static Sql2o sql2o;
   public static void main(String[] args) throws Exception {
+    System.out.println("DirtyDB API");
     Arrays.asList("port", "jdbc_url", "jdbc_user", "jdbc_password").forEach( s -> {
      if ( System.getenv(s) == null ) {
        System.err.println("Require " + s + " to be set from the environment");
