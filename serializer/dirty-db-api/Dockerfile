@@ -15,5 +15,5 @@ RUN ["mvn", "verify"]
 ADD src /code/src
 RUN ["mvn", "package"]
 
-EXPOSE 4567
+EXPOSE 8080 
 CMD ["/usr/lib/jvm/java-8-openjdk-amd64/bin/java", "-jar", "target/dirty-db-api-1.0.jar"]
