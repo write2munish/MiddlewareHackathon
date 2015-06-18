@@ -13,6 +13,7 @@
     <modules>
         <module>serializer/CanonicalAPIMock</module>
         <module>serializer/dirty-db-api</module>
+	<module>serializer/xucdm-serializer</module>
         <module>source-lambda</module>
     	<module>canonical</module>
     </modules>

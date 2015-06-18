@@ -1,7 +1,6 @@
 package com.philips;
 
-import static spark.Spark.get;
-import static spark.Spark.post;
+import static spark.Spark.*;
 
 import java.sql.Timestamp;
 import java.util.Arrays;
@@ -18,12 +17,13 @@ public class ChangeLog {
   
   static Sql2o sql2o;
   public static void main(String[] args) throws Exception {
-    Arrays.asList("jdbc_url", "jdbc_user", "jdbc_password").forEach( s -> {
+    Arrays.asList("port", "jdbc_url", "jdbc_user", "jdbc_password").forEach( s -> {
      if ( System.getenv(s) == null ) {
        System.err.println("Require " + s + " to be set from the environment");
        System.exit(1);
      }
     });
+    port(Integer.parseInt(System.getenv("port")));
     sql2o = new Sql2o(System.getenv("jdbc_url"),
         System.getenv("jdbc_user"), System.getenv("jdbc_password"));
     
@@ -45,7 +45,12 @@ public class ChangeLog {
       }
     }, new JsonTransformer());
     
-    post("/changelog", "application/json", (req, res) -> {
+    get("/logchange", (req, res) -> {
+      res.status(400);
+      return "Sorry only post supported";
+    });
+    
+    post("/logchange", "application/json", (req, res) -> {
       ChangeSet object = gson.fromJson(req.body(), ChangeSet.class);
       try (Connection conn = sql2o.beginTransaction()) {
         conn.createQuery("insert into dirty_list(id, type, country, language, lastmodified, sequencenumber) VALUES (:id, :type, :country, :language, :lastmodified, :sequencenumber)")
