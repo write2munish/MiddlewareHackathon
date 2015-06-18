@@ -3,7 +3,7 @@ package com.philips.middleware.canonical;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.amazonaws.auth.profile.ProfileCredentialsProvider;
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
@@ -17,7 +17,7 @@ public class DynamoDBConnection {
 	private static DynamoDB dynamoDB  = null;
 	
 	public DynamoDBConnection() {
-		AmazonDynamoDB dynamoDBClient = new AmazonDynamoDBClient(new ProfileCredentialsProvider());
+		AmazonDynamoDB dynamoDBClient = new AmazonDynamoDBClient(new DefaultAWSCredentialsProviderChain());
 		Region euWest1 = Region.getRegion(Regions.EU_WEST_1);
 		dynamoDBClient.setRegion(euWest1);
 		dynamoDB = new DynamoDB(dynamoDBClient);

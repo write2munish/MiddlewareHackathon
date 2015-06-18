@@ -6,10 +6,10 @@ import java.util.Date;
 
 import org.junit.Test;
 
+import us.monoid.json.JSONException;
+
 import com.google.gson.Gson;
 import com.philips.middleware.canonical.lambda.ChangeSet.Type;
-
-import us.monoid.json.JSONException;
 
 public class LogChangeTest {
 
