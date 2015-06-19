@@ -1,0 +1,13 @@
+---
+# account-specific variables
+region: eu-west-1
+keypair: awsintro
+vpcid: vpc-efbf708a
+subnet: subnet-60cd6a17
+
+# for ses-smtp-user.20141201-115913
+smtp_host: email-smtp.eu-west-1.amazonaws.com
+smtp_sender: henning.kristensen@gmail.com
+smtp_username: AKIAJ4UMF776WY7NR4GQ
+# password hashed using https://charleslavery.com/notes/aws-ses-smtp-password-from-secret-key-python
+smtp_password: "AsB1iPsCU1vbF1e/OKjqbsD6ALu5gt1s+aDIamvKwEsU"

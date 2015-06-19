@@ -1,0 +1,245 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+
+DOCUMENTATION = '''
+---
+module: ec2_iam_role
+version_added: "1.9"
+short_description: maintains iam role
+description:
+    - maintains iam role. This module has a dependency on python-boto >= 2.5
+    See https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html
+options:
+  name:
+    description:
+      - Name of the iam role
+    required: true
+  region:
+    description:
+      - The EC2 region to use
+    required: false
+    default: null
+    aliases: []
+    required: false
+  instanceprofile:
+    description:
+      - Should an instance profile be created
+    aliases: []
+    default: true
+    required: false
+  state:
+    description:
+      - Create or delete iam role
+    required: false
+    default: 'present'
+    aliases: []
+
+extends_documentation_fragment: aws
+author: Henning Kristensen
+'''
+
+EXAMPLES = '''
+# Note: None of these examples set aws_access_key, aws_secret_key, or region.
+# It is assumed that their matching environment variables are set.
+
+# Assumes a default ec2 role trust policy
+
+# Creates a new iam role named `ExampleRole`, also create an iam instance profile
+# with the same name. Returns Role structure
+- name: create iam ExampleRole
+  local_action:
+    module: ec2_iam_role
+    name: ExampleRole
+    instanceprofile: true
+
+# Removes an iam role named `ExampleRole`
+- name: remove iam ExampleRole
+  local_action:
+    module: ec2_iam_role
+    name: ExampleRole
+    state: absent
+'''
+
+ec2_role_trust_policy = '''
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": { "Service": "ec2.amazonaws.com" },
+      "Action": "sts:AssumeRole"
+    },
+    {
+      "Effect": "Allow",
+      "Principal": { "Service": "lambda.amazonaws.com" },
+      "Action": "sts:AssumeRole"
+    }]
+}
+'''
+
+import sys
+
+try:
+    import boto.iam
+except ImportError:
+    print "failed=True msg='boto required for this module'"
+    sys.exit(1)
+
+def iam_connect(module):
+
+    """ Return an iam connection"""
+
+    region, ec2_url, boto_params = get_aws_connection_info(module)
+
+    # If we have a region specified, connect to its endpoint.
+    if region:
+        try:
+            iam = connect_to_aws(boto.iam, region, **boto_params)
+        except boto.exception.NoAuthHandlerFound, e:
+            module.fail_json(msg=str(e))
+    # Otherwise, no region so we fallback to the old connection method
+    else:
+        module.fail_json(msg="Region must be specified")
+
+    return iam
+
+
+def find_iam_profile(iam, name):
+    # find the profile if present
+    iamprofile = None
+    try:
+        iamprofile = iam.get_instance_profile(name)
+    except boto.exception.BotoServerError, e:
+        if e.status == 404:
+            pass
+        else:
+            raise e
+
+    return iamprofile
+
+
+def find_iam_role(iam, name):
+    # find the role if present
+    iamrole = None
+    try:
+        iamrole = iam.get_role(name)
+    except boto.exception.BotoServerError, e:
+        if e.status == 404:
+            pass
+        else:
+            raise e
+
+    return iamrole
+
+
+def main():
+    argument_spec = ec2_argument_spec()
+    argument_spec.update(dict(
+            name=dict(required=True),
+            instanceprofile=dict(type='bool', default=True),
+            state=dict(default='present', choices=['present', 'absent']),
+        )
+    )
+    module = AnsibleModule(
+        argument_spec=argument_spec,
+        supports_check_mode=True,
+    )
+
+    name = module.params['name']
+    state = module.params.get('state')
+    instanceprofile = module.params.get('instanceprofile')
+
+    changed = False
+
+    iam = iam_connect(module)
+
+    iamrole = find_iam_role(iam, name)
+    iamprofile = find_iam_profile(iam, name)
+    role_output = None
+    profile_output = None
+
+    # Ensure role and profile is absent
+    if state == 'absent':
+        if iamprofile or iamrole:
+
+            if iamrole:
+                resp = iam.list_instance_profiles_for_role(name)
+
+                # remove role from all instance profiles
+                for instance_profile_dict in resp["list_instance_profiles_for_role_response"]['list_instance_profiles_for_role_result']['instance_profiles']:
+                    if instance_profile_dict['instance_profile_name'] == name:
+                        iam.remove_role_from_instance_profile(instance_profile_dict['instance_profile_name'], name)
+
+                resp = iam.list_role_policies(name)
+
+                # remove policies from all roles
+                for policy_name in resp['list_role_policies_response']['list_role_policies_result']['policy_names']:
+                    iam.delete_role_policy(name, policy_name)
+
+                iam.delete_role(name)
+                role_output = None
+                changed = True
+
+            if iamprofile:
+                iam.delete_instance_profile(name)
+                profile_output = None
+                changed = True
+
+        else:
+            '''no match found, no changes required'''
+
+        module.exit_json(changed=changed, role=role_output, profile=profile_output)
+
+    # Ensure requested key is present
+    elif state == 'present':
+
+        if iamrole:
+            role_output = iamrole['get_role_response']['get_role_result']['role']
+        else:
+            if not module.check_mode:
+                resp = iam.create_role(name, ec2_role_trust_policy.strip())
+                role_output = resp['create_role_response']['create_role_result']['role']
+                changed = True
+
+        if iamprofile:
+            profile_output = iamprofile['get_instance_profile_response']['get_instance_profile_result']['instance_profile']
+        else:
+            if not module.check_mode:
+                if instanceprofile:
+                    resp = iam.create_instance_profile(name)
+                    profile_output = resp['create_instance_profile_response']['create_instance_profile_result']['instance_profile']
+                    changed = True
+
+        # update instance_profiles
+        role_and_profile_already_linked = False
+        resp = iam.list_instance_profiles_for_role(name)
+
+        for instance_profile_dict in resp["list_instance_profiles_for_role_response"]['list_instance_profiles_for_role_result']['instance_profiles']:
+            if instance_profile_dict['instance_profile_name'] != name or not instanceprofile:
+                iam.remove_role_from_instance_profile(instance_profile_dict['instance_profile_name'], name)
+                profile_output = None
+                changed = True
+            else:
+                role_and_profile_already_linked = True
+
+        if not role_and_profile_already_linked:
+            if instanceprofile:
+                iam.add_role_to_instance_profile(name, name)
+                reload_iamprofile = find_iam_profile(iam, name)
+                profile_output = reload_iamprofile['get_instance_profile_response']['get_instance_profile_result']['instance_profile']
+                changed = True
+
+        if changed:
+            reload_iamrole = find_iam_role(iam, name)
+            role_output = reload_iamrole['get_role_response']['get_role_result']['role']
+
+        module.exit_json(changed=changed, role=role_output, profile=profile_output)
+    else:
+        module.exit_json(changed=changed, role=None, profile=None)
+
+# import module snippets
+from ansible.module_utils.basic import *
+from ansible.module_utils.ec2 import *
+
+main()

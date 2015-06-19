@@ -1,0 +1,78 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+          "Effect": "Allow",
+          "Action": [
+            "ecs:CreateCluster",
+            "ecs:DeregisterContainerInstance",
+            "ecs:DiscoverPollEndpoint",
+            "ecs:Poll",
+            "ecs:RegisterContainerInstance",
+            "ecs:Submit*"
+          ],
+          "Resource": [
+            "*"
+          ]
+        },
+        {
+            "Sid": "Stmt1431975772000",
+            "Effect": "Allow",
+            "Action": [
+                "sns:GetEndpointAttributes",
+                "sns:GetPlatformApplicationAttributes",
+                "sns:GetSubscriptionAttributes",
+                "sns:GetTopicAttributes",
+                "sns:ListSubscriptions",
+                "sns:ListSubscriptionsByTopic",
+                "sns:ListTopics",
+                "sns:Publish",
+                "sns:Subscribe",
+                "sns:Unsubscribe"
+            ],
+            "Resource": [
+                "arn:aws:sns:*:*:*TownClock*"
+            ]
+        },
+        {
+          "Effect": "Allow",
+          "Action": [
+            "logs:*"
+          ],
+          "Resource": "arn:aws:logs:*:*:*"
+        },
+        {
+          "Sid": "Stmt1428341300017",
+          "Action": [
+            "dynamodb:DeleteItem",
+            "dynamodb:GetItem",
+            "dynamodb:PutItem",
+            "dynamodb:Query",
+            "dynamodb:Scan",
+            "dynamodb:UpdateItem"
+          ],
+          "Effect": "Allow",
+          "Resource": "*"
+        },
+        {
+          "Sid": "",
+          "Resource": "*",
+          "Action": [
+            "logs:*"
+          ],
+          "Effect": "Allow"
+        },
+        {
+          "Effect": "Allow",
+          "Action": [
+            "ec2:Describe*",
+            "elasticloadbalancing:*",
+            "ecs:*",
+            "iam:ListInstanceProfiles",
+            "iam:ListRoles",
+            "iam:PassRole"
+          ],
+          "Resource": "*"
+        }
+    ]
+}

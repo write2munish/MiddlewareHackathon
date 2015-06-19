@@ -1,0 +1,148 @@
+{
+    "Description": "    Serializer Layer\n    ",
+    "Outputs": {
+        "taskdefinitionid": {
+            "Description": "Task Definition Id",
+            "Value": {
+                "Ref": "TaskDefinition"
+            }
+        }
+    },
+    "Parameters": {
+        "CanonicalPrefix": {
+            "Default": "CANON_",
+            "Description": "Canonical Tables Prefix",
+            "Type": "String"
+        },
+        "ClusterId": {
+            "Description": "ClusterId to run the serializer on",
+            "Type": "String"
+        },
+        "DirtyList": {
+            "Description": "DirtyList Table Name",
+            "Type": "String"
+        },
+        "DockerId": {
+            "Default": "centos:latest",
+            "Description": "DockerId (default: centos:latest)",
+            "Type": "String"
+        },
+        "ExecutionRole": {
+            "Description": "Lambda Execution Role",
+            "Type": "String"
+        },
+        "HaskKeyElementName": {
+            "AllowedPattern": "[a-zA-Z0-9]*",
+            "ConstraintDescription": "must contain only alphanumberic characters",
+            "Default": "id",
+            "Description": "HashType PrimaryKey Name (default: id)",
+            "MaxLength": "2048",
+            "MinLength": "1",
+            "Type": "String"
+        },
+        "RunLog": {
+            "Description": "RunLog Table Name",
+            "Type": "String"
+        },
+        "SerializerName": {
+            "Default": "SampleSerializer",
+            "Description": "Serializer Name (default: SampleSerializer)",
+            "Type": "String"
+        },
+        "StackName": {
+            "Default": "hackathon",
+            "Description": "Environment Name (default: hackathon)",
+            "Type": "String"
+        }
+    },
+    "Resources": {
+        "TaskDefinition": {
+            "Properties": {
+                "ContainerDefinitions": [
+                    {
+                        "Environment": [
+                            {
+                                "Name": "LAYER",
+                                "Value": {
+                                    "Ref": "StackName"
+                                }
+                            },
+                            {
+                                "Name": "SERIALIZER",
+                                "Value": {
+                                    "Ref": "SerializerName"
+                                }
+                            },
+                            {
+                                "Name": "SERIALIZER_TABLE",
+                                "Value": {
+                                    "Ref": "sampleSerializerTable"
+                                }
+                            },
+                            {
+                                "Name": "CANONICAL_PREFIX",
+                                "Value": {
+                                    "Ref": "CanonicalPrefix"
+                                }
+                            },
+                            {
+                                "Name": "DIRTYLIST",
+                                "Value": {
+                                    "Ref": "DirtyList"
+                                }
+                            },
+                            {
+                                "Name": "RUNLOG",
+                                "Value": {
+                                    "Ref": "RunLog"
+                                }
+                            }
+                        ],
+                        "Image": {
+                            "Ref": "DockerId"
+                        },
+                        "Memory": 512,
+                        "Name": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    {
+                                        "Ref": "StackName"
+                                    },
+                                    "Task"
+                                ]
+                            ]
+                        }
+                    }
+                ],
+                "Volumes": []
+            },
+            "Type": "AWS::ECS::TaskDefinition"
+        },
+        "sampleSerializerTable": {
+            "Properties": {
+                "AttributeDefinitions": [
+                    {
+                        "AttributeName": {
+                            "Ref": "HaskKeyElementName"
+                        },
+                        "AttributeType": "S"
+                    }
+                ],
+                "KeySchema": [
+                    {
+                        "AttributeName": {
+                            "Ref": "HaskKeyElementName"
+                        },
+                        "KeyType": "HASH"
+                    }
+                ],
+                "ProvisionedThroughput": {
+                    "ReadCapacityUnits": 1,
+                    "WriteCapacityUnits": 1
+                }
+            },
+            "Type": "AWS::DynamoDB::Table"
+        }
+    }
+}

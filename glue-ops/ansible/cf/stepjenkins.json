@@ -1,0 +1,259 @@
+{
+    "Description": "    Jenkins for Step Hackathon Layer\n    ",
+    "Parameters": {
+        "DashsoftHostedZoneParam": {
+            "Default": "hackathon.operations.dk",
+            "Description": "HostedZone (default: hackathon.operations.dk)",
+            "Type": "String"
+        },
+        "IamRole": {
+            "Description": "IAM Role name",
+            "Type": "String"
+        },
+        "JenkinsAmiId": {
+            "Default": "ami-f3641a84",
+            "Description": "Jenkins server AMI ID (default: ami-f3641a84)",
+            "Type": "String"
+        },
+        "KeyPair": {
+            "Default": "glueteam",
+            "Description": "Name of an existing EC2 KeyPair to enable SSH access to the instance",
+            "Type": "String"
+        },
+        "StackName": {
+            "Default": "hackathon",
+            "Description": "Environment Name (default: hackathon)",
+            "Type": "String"
+        },
+        "Subnets": {
+            "Default": "subnet-b68f3bef,subnet-9a6208ff,subnet-bfdd4fc8",
+            "Description": "The list SubnetIds, for public subnets in the region and in your Virtual Private Cloud (VPC) - minimum one",
+            "Type": "CommaDelimitedList"
+        },
+        "VpcId": {
+            "Default": "vpc-fab00e9f",
+            "Description": "VpcId of your existing Virtual Private Cloud (VPC)",
+            "Type": "String"
+        }
+    },
+    "Resources": {
+        "JenkinsEIP": {
+            "Properties": {
+                "Domain": "vpc"
+            },
+            "Type": "AWS::EC2::EIP"
+        },
+        "JenkinsEIPAssoc": {
+            "Properties": {
+                "AllocationId": {
+                    "Fn::GetAtt": [
+                        "JenkinsEIP",
+                        "AllocationId"
+                    ]
+                },
+                "NetworkInterfaceId": {
+                    "Ref": "JenkinsEth0"
+                },
+                "PrivateIpAddress": {
+                    "Fn::GetAtt": [
+                        "JenkinsEth0",
+                        "PrimaryPrivateIpAddress"
+                    ]
+                }
+            },
+            "Type": "AWS::EC2::EIPAssociation"
+        },
+        "JenkinsEth0": {
+            "Properties": {
+                "Description": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            {
+                                "Ref": "StackName"
+                            },
+                            " Eth0"
+                        ]
+                    ]
+                },
+                "GroupSet": [
+                    {
+                        "Ref": "JenkinsSG"
+                    }
+                ],
+                "SourceDestCheck": "true",
+                "SubnetId": {
+                    "Fn::Select": [
+                        0,
+                        {
+                            "Ref": "Subnets"
+                        }
+                    ]
+                },
+                "Tags": [
+                    {
+                        "Key": "Interface",
+                        "Value": "eth0"
+                    },
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    {
+                                        "Ref": "StackName"
+                                    },
+                                    " Interface 0"
+                                ]
+                            ]
+                        }
+                    }
+                ]
+            },
+            "Type": "AWS::EC2::NetworkInterface"
+        },
+        "JenkinsHost": {
+            "Properties": {
+                "IamInstanceProfile": {
+                    "Ref": "IamRole"
+                },
+                "ImageId": {
+                    "Ref": "JenkinsAmiId"
+                },
+                "InstanceType": "m3.medium",
+                "KeyName": {
+                    "Ref": "KeyPair"
+                },
+                "NetworkInterfaces": [
+                    {
+                        "DeviceIndex": "0",
+                        "NetworkInterfaceId": {
+                            "Ref": "JenkinsEth0"
+                        }
+                    }
+                ],
+                "Tags": [
+                    {
+                        "Key": "Id",
+                        "Value": {
+                            "Ref": "StackName"
+                        }
+                    },
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Ref": "StackName"
+                        }
+                    }
+                ],
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "#!/bin/bash\n"
+                            ]
+                        ]
+                    }
+                }
+            },
+            "Type": "AWS::EC2::Instance"
+        },
+        "JenkinsHostCname": {
+            "DependsOn": "JenkinsEIPAssoc",
+            "Properties": {
+                "Comment": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "Jenkins host CNAME for ",
+                            {
+                                "Ref": "StackName"
+                            }
+                        ]
+                    ]
+                },
+                "HostedZoneName": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            {
+                                "Ref": "DashsoftHostedZoneParam"
+                            },
+                            "."
+                        ]
+                    ]
+                },
+                "Name": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "jenkins.",
+                            {
+                                "Ref": "DashsoftHostedZoneParam"
+                            },
+                            "."
+                        ]
+                    ]
+                },
+                "ResourceRecords": [
+                    {
+                        "Fn::GetAtt": [
+                            "JenkinsHost",
+                            "PublicIp"
+                        ]
+                    }
+                ],
+                "TTL": "60",
+                "Type": "A"
+            },
+            "Type": "AWS::Route53::RecordSet"
+        },
+        "JenkinsSG": {
+            "Properties": {
+                "GroupDescription": "Security group for Jenkins host",
+                "SecurityGroupIngress": [
+                    {
+                        "CidrIp": "0.0.0.0/0",
+                        "FromPort": "22",
+                        "IpProtocol": "tcp",
+                        "ToPort": "22"
+                    },
+                    {
+                        "CidrIp": "0.0.0.0/0",
+                        "FromPort": "80",
+                        "IpProtocol": "tcp",
+                        "ToPort": "80"
+                    },
+                    {
+                        "CidrIp": "0.0.0.0/0",
+                        "FromPort": "443",
+                        "IpProtocol": "tcp",
+                        "ToPort": "443"
+                    }
+                ],
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    {
+                                        "Ref": "StackName"
+                                    },
+                                    "SG"
+                                ]
+                            ]
+                        }
+                    }
+                ],
+                "VpcId": {
+                    "Ref": "VpcId"
+                }
+            },
+            "Type": "AWS::EC2::SecurityGroup"
+        }
+    }
+}

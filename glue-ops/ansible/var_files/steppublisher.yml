@@ -1,0 +1,3 @@
+iamrole: StepPublisherScheduler
+base_stackname: StepPublisherBase
+bucketname: "cf-templates-2r1ar382fv34-eu-west-1"

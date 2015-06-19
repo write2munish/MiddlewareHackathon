@@ -1,0 +1,6 @@
+---
+# account-specific variables
+region: eu-west-1
+keypair: glueteam
+vpcid: vpc-fab00e9f
+subnets: "subnet-b68f3bef,subnet-9a6208ff,subnet-bfdd4fc8"

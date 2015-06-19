@@ -1,0 +1,36 @@
+#
+# ansible-playbook -i localhost-inventory build-step-jenkins.yml
+#
+---
+- hosts: localhost
+  connection: local
+  gather_facts: False
+  vars:
+  - account: "{{ lookup('env','AWS_ACCOUNT_NAME') }}"
+  - subdomain: "" # subdomain if building non-production (named eg. "staging." with appended dot)
+  - stackname: "StepJenkins"
+  vars_files:
+  - var_files/{{ lookup('env','AWS_ACCOUNT_NAME') }}-account.yml
+  - var_files/steppublisher.yml
+  tasks:
+  - name: Create IAM Server role with instance profile
+    ec2_iam_role: name="{{iamrole}}" instanceprofile="yes" region="{{region}}"
+    register: iam
+
+  - name: Upload cloudformation template to S3
+    command: aws s3 cp "{{ lookup('filepath', 'cf/stepjenkins.json') }}" s3://{{bucketname}}/ --region "{{region}}"
+
+  - name: Run stepjenkins cf template
+    cloudformation2:
+      stack_name: "{{stackname}}"
+      state: present
+      region: "{{region}}"
+      template_url: "https://s3-{{region}}.amazonaws.com/{{bucketname}}/stepjenkins.json"
+      template_parameters:
+        StackName: "{{ stackname }}"
+        KeyPair: "{{ keypair }}"
+        IamRole: "{{ iamrole }}"
+      tags:
+        Stackname: "{{ stackname }}"
+        Customer: "Glueteam"
+    register: steppublisher

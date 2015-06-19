@@ -1,0 +1,75 @@
+#!/bin/bash
+#
+#
+#
+if [ "$#" -eq 0 -a ! -z "$AWS_ACCOUNT_NAME" ];
+  then
+    echo "Current AWS account: $AWS_ACCOUNT_NAME"
+    [[ $BASH_SOURCE != $0 ]] && return 0
+    exit 0
+fi
+
+[[ $BASH_SOURCE == $0 ]] && echo "Please run this script as a sourced script to set your environment"
+
+EC2_PY_CMD=$(PATH=".:$PATH" which dashsoft-ec2.py)
+if [ -z "$EC2_PY_CMD" -o ! -f "$EC2_PY_CMD" ];
+  then
+    echo "An inventory script named dashsoft-ec2.py MUST exist on the path or in the working directory"
+    [[ $BASH_SOURCE != $0 ]] && return 1
+    exit 1
+fi
+
+# ANSIBLE_EC2_CMD=$(PATH=".:$PATH" which ansible-ec2)
+# if [ -z "$ANSIBLE_EC2_CMD" -o ! -f "$ANSIBLE_EC2_CMD" ];
+#   then
+#    wget -q https://raw.githubusercontent.com/pas256/ansible-ec2/master/bin/ansible-ec2
+#    chmod 755 ansible-ec2
+#    ./ansible-ec2 -h 2>&1 >/dev/null
+#    [ "$?" -ne 0 ] && echo "You might need to \"pip install python-dateutil\" to run ansible-ec2"
+#fi
+
+if [ "$#" != 1 -o ! -f "$HOME/.boto-$1" ];
+  then
+    echo "Usage: aws-activate <awsaccount> where awsaccont is one of:"
+    echo ""
+    ( cd $HOME ; ls .boto-* | sed 's/.boto-/    /' )
+    echo
+    echo "Add accounts by creating a .boto-<awsaccount> file in your \$HOME directory"
+    return
+fi
+
+export AWS_ACCOUNT_NAME=$1
+
+if [ "$AWS_ACCOUNT_NAME" == "dashsoft" -o "$AWS_ACCOUNT_NAME" == "minerva" ];
+  then
+    echo "Using internal ip addresses"
+    export EC2_INI_PATH="$PWD/ec2internal.ini"
+else
+  if [ "$AWS_ACCOUNT_NAME" == "phillips" ];
+    then
+      echo "Using phillips setup"
+      export EC2_INI_PATH="$PWD/ec2phillips.ini"
+  else
+      if [ -z "ec2.ini" -o ! -f "ec2.ini" ];
+        then
+          wget -q https://raw.githubusercontent.com/ansible/ansible/devel/plugins/inventory/ec2.ini
+      fi
+      export EC2_INI_PATH="$PWD/ec2.ini"
+  fi
+
+
+fi
+
+export BOTO_CONFIG=$HOME/.boto-$1
+export ANSIBLE_HOSTS="$EC2_PY_CMD"
+
+export EC2_ACCESS_KEY=$(cat $BOTO_CONFIG | grep ^aws_access_key_id | cut -f2- -d"=" | tr -d " ")
+export EC2_SECRET_KEY=$(cat $BOTO_CONFIG | grep ^aws_secret_access_key | cut -f2- -d"=" | tr -d " ")
+export EC2_REGION_NAME=$(cat $BOTO_CONFIG | grep ^ec2_region_name | cut -f2- -d"=" | tr -d " ")
+if [ "$EC2_REGION_NAME" == "" ];
+  then
+    EC2_REGION_NAME="eu-west-1"
+fi
+export AWS_DEFAULT_REGION="$EC2_REGION_NAME"
+export AWS_ACCESS_KEY_ID=$EC2_ACCESS_KEY
+export AWS_SECRET_ACCESS_KEY=$EC2_SECRET_KEY

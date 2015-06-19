@@ -1,0 +1,41 @@
+{
+    "Description": "    Global Layer\n    ",
+    "Outputs": {
+        "crontabtablename": {
+            "Description": "Crontab Table Name",
+            "Value": {
+                "Ref": "scheduleTable"
+            }
+        }
+    },
+    "Parameters": {
+        "StackName": {
+            "Default": "StepGlobals",
+            "Description": "Environment Name (default: StepGlobals)",
+            "Type": "String"
+        }
+    },
+    "Resources": {
+        "scheduleTable": {
+            "Properties": {
+                "AttributeDefinitions": [
+                    {
+                        "AttributeName": "taskname",
+                        "AttributeType": "S"
+                    }
+                ],
+                "KeySchema": [
+                    {
+                        "AttributeName": "taskname",
+                        "KeyType": "HASH"
+                    }
+                ],
+                "ProvisionedThroughput": {
+                    "ReadCapacityUnits": 1,
+                    "WriteCapacityUnits": 1
+                }
+            },
+            "Type": "AWS::DynamoDB::Table"
+        }
+    }
+}

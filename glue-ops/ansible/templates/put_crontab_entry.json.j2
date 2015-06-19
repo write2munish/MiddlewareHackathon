@@ -1,0 +1,6 @@
+{
+    "taskname": {"S": "{{ serializer_stackname }}"},
+    "taskid": {"S": "{{stepserializer["stack_outputs"]["taskdefinitionid"]}}"},
+    "schedule": {"SS": ["*/5 * * * *"]},
+    "lastExecution": {"N": "0"}
+}

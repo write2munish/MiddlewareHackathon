@@ -1,0 +1,466 @@
+{
+    "Description": "    StepScheduler Layer\n    ",
+    "Outputs": {
+        "clocktowertopicarn": {
+            "Description": "Clock Tower Topic Arn",
+            "Value": {
+                "Ref": "TownClock"
+            }
+        },
+        "clusterid": {
+            "Description": "Cluster Id",
+            "Value": {
+                "Ref": "ECSCluster"
+            }
+        },
+        "dirtylist": {
+            "Description": "DirtyList Tablename",
+            "Value": {
+                "Ref": "DirtyList"
+            }
+        },
+        "lambdafunctionname": {
+            "Description": "Lambda Function Name",
+            "Value": {
+                "Ref": "containerLauncher"
+            }
+        },
+        "runlog": {
+            "Description": "Runlog Tablename",
+            "Value": {
+                "Ref": "RunLog"
+            }
+        }
+    },
+    "Parameters": {
+        "ClusterAmiId": {
+            "Default": "ami-3db4ca4a",
+            "Description": "Cluster server AMI ID (default: ami-3db4ca4a)",
+            "Type": "String"
+        },
+        "Containerlauncher": {
+            "Default": "containerLauncher-1.0.zip",
+            "Description": "Container Launcher zip file (default: containerLauncher-1.0.zip)",
+            "Type": "String"
+        },
+        "CrontabTablename": {
+            "Description": "Crontab Table Name",
+            "Type": "String"
+        },
+        "HaskKeyElementName": {
+            "AllowedPattern": "[a-zA-Z0-9]*",
+            "ConstraintDescription": "must contain only alphanumberic characters",
+            "Default": "id",
+            "Description": "HashType PrimaryKey Name (default: id)",
+            "MaxLength": "2048",
+            "MinLength": "1",
+            "Type": "String"
+        },
+        "IamRole": {
+            "Description": "IAM Role name",
+            "Type": "String"
+        },
+        "KeyPair": {
+            "Default": "glueteam",
+            "Description": "Name of an existing EC2 KeyPair to enable SSH access to the instance",
+            "Type": "String"
+        },
+        "SchedulerAmiId": {
+            "Default": "ami-a10897d6",
+            "Description": "Scheduler server AMI ID (default: ami-a10897d6)",
+            "Type": "String"
+        },
+        "StackName": {
+            "Default": "hackathon",
+            "Description": "Environment Name (default: hackathon)",
+            "Type": "String"
+        },
+        "Subnets": {
+            "Default": "subnet-b68f3bef,subnet-9a6208ff,subnet-bfdd4fc8",
+            "Description": "The list SubnetIds, for public subnets in the region and in your Virtual Private Cloud (VPC) - minimum one",
+            "Type": "CommaDelimitedList"
+        },
+        "VpcId": {
+            "Default": "vpc-fab00e9f",
+            "Description": "VpcId of your existing Virtual Private Cloud (VPC)",
+            "Type": "String"
+        },
+        "ZipfileVersion": {
+            "Description": "Container Launcher zip file version",
+            "Type": "String"
+        }
+    },
+    "Resources": {
+        "ClusterHost": {
+            "Properties": {
+                "IamInstanceProfile": {
+                    "Ref": "IamRole"
+                },
+                "ImageId": {
+                    "Ref": "ClusterAmiId"
+                },
+                "InstanceType": "t2.micro",
+                "KeyName": {
+                    "Ref": "KeyPair"
+                },
+                "NetworkInterfaces": [
+                    {
+                        "AssociatePublicIpAddress": "true",
+                        "DeleteOnTermination": "true",
+                        "DeviceIndex": 0,
+                        "GroupSet": [
+                            {
+                                "Ref": "ClusterSG"
+                            }
+                        ],
+                        "SubnetId": {
+                            "Fn::Select": [
+                                0,
+                                {
+                                    "Ref": "Subnets"
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "Tags": [
+                    {
+                        "Key": "Id",
+                        "Value": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    {
+                                        "Ref": "StackName"
+                                    },
+                                    "ClusterNode"
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    {
+                                        "Ref": "StackName"
+                                    },
+                                    "ClusterNode"
+                                ]
+                            ]
+                        }
+                    }
+                ],
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "#!/bin/bash\n",
+                                "mkdir /etc/ecs\n",
+                                "cat <<EOF >/etc/ecs/ecs.config\n",
+                                "ECS_CLUSTER=",
+                                {
+                                    "Ref": "ECSCluster"
+                                },
+                                "\n",
+                                "EOF\n"
+                            ]
+                        ]
+                    }
+                }
+            },
+            "Type": "AWS::EC2::Instance"
+        },
+        "ClusterSG": {
+            "Properties": {
+                "GroupDescription": "Security group for Cluster host",
+                "SecurityGroupIngress": [
+                    {
+                        "CidrIp": "0.0.0.0/0",
+                        "FromPort": "22",
+                        "IpProtocol": "tcp",
+                        "ToPort": "22"
+                    }
+                ],
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    {
+                                        "Ref": "StackName"
+                                    },
+                                    "ClusterSG"
+                                ]
+                            ]
+                        }
+                    }
+                ],
+                "VpcId": {
+                    "Ref": "VpcId"
+                }
+            },
+            "Type": "AWS::EC2::SecurityGroup"
+        },
+        "DirtyList": {
+            "Properties": {
+                "AttributeDefinitions": [
+                    {
+                        "AttributeName": {
+                            "Ref": "HaskKeyElementName"
+                        },
+                        "AttributeType": "S"
+                    }
+                ],
+                "KeySchema": [
+                    {
+                        "AttributeName": {
+                            "Ref": "HaskKeyElementName"
+                        },
+                        "KeyType": "HASH"
+                    }
+                ],
+                "ProvisionedThroughput": {
+                    "ReadCapacityUnits": 1,
+                    "WriteCapacityUnits": 1
+                }
+            },
+            "Type": "AWS::DynamoDB::Table"
+        },
+        "ECSCluster": {
+            "Type": "AWS::ECS::Cluster"
+        },
+        "RunLog": {
+            "Properties": {
+                "AttributeDefinitions": [
+                    {
+                        "AttributeName": {
+                            "Ref": "HaskKeyElementName"
+                        },
+                        "AttributeType": "S"
+                    }
+                ],
+                "KeySchema": [
+                    {
+                        "AttributeName": {
+                            "Ref": "HaskKeyElementName"
+                        },
+                        "KeyType": "HASH"
+                    }
+                ],
+                "ProvisionedThroughput": {
+                    "ReadCapacityUnits": 1,
+                    "WriteCapacityUnits": 1
+                }
+            },
+            "Type": "AWS::DynamoDB::Table"
+        },
+        "SchedulerHost": {
+            "Properties": {
+                "IamInstanceProfile": {
+                    "Ref": "IamRole"
+                },
+                "ImageId": {
+                    "Ref": "SchedulerAmiId"
+                },
+                "InstanceType": "t2.micro",
+                "KeyName": {
+                    "Ref": "KeyPair"
+                },
+                "NetworkInterfaces": [
+                    {
+                        "AssociatePublicIpAddress": "true",
+                        "DeleteOnTermination": "true",
+                        "DeviceIndex": 0,
+                        "GroupSet": [
+                            {
+                                "Ref": "SchedulerSG"
+                            }
+                        ],
+                        "SubnetId": {
+                            "Fn::Select": [
+                                0,
+                                {
+                                    "Ref": "Subnets"
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "Tags": [
+                    {
+                        "Key": "Id",
+                        "Value": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    {
+                                        "Ref": "StackName"
+                                    },
+                                    "Scheduler"
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    {
+                                        "Ref": "StackName"
+                                    },
+                                    "Scheduler"
+                                ]
+                            ]
+                        }
+                    }
+                ],
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "#!/bin/bash\n",
+                                "yum update -y aws-cfn-bootstrap\n",
+                                "sns_topic_arn=\"",
+                                {
+                                    "Ref": "TownClock"
+                                },
+                                "\"\n",
+                                "region=\"",
+                                {
+                                    "Ref": "AWS::Region"
+                                },
+                                "\"\n",
+                                "crontab_tablename=\"",
+                                {
+                                    "Ref": "CrontabTablename"
+                                },
+                                "\"\n",
+                                "ecs_clustername=\"",
+                                {
+                                    "Ref": "ECSCluster"
+                                },
+                                "\"\n",
+                                "publish_source=https://raw.githubusercontent.com/hngkr/hackathon/master/ansible/files/unreliable-town-clock-publish\n",
+                                "publish=/usr/local/bin/unreliable-town-clock-publish\n",
+                                "curl -s --location --retry 10 -o $publish $publish_source\n",
+                                "chmod +x $publish\n",
+                                "cat <<EOF >/etc/cron.d/unreliable-town-clock\n",
+                                "*/2 * * * * ec2-user $publish \"$sns_topic_arn\" \"$region\" \"$crontab_tablename\" \"$ecs_clustername\"\n",
+                                "EOF\n"
+                            ]
+                        ]
+                    }
+                }
+            },
+            "Type": "AWS::EC2::Instance"
+        },
+        "SchedulerSG": {
+            "Properties": {
+                "GroupDescription": "Security group for Scheduler host",
+                "SecurityGroupIngress": [
+                    {
+                        "CidrIp": "0.0.0.0/0",
+                        "FromPort": "22",
+                        "IpProtocol": "tcp",
+                        "ToPort": "22"
+                    },
+                    {
+                        "CidrIp": "0.0.0.0/0",
+                        "FromPort": "8080",
+                        "IpProtocol": "tcp",
+                        "ToPort": "8080"
+                    }
+                ],
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    {
+                                        "Ref": "StackName"
+                                    },
+                                    "SchedulerSG"
+                                ]
+                            ]
+                        }
+                    }
+                ],
+                "VpcId": {
+                    "Ref": "VpcId"
+                }
+            },
+            "Type": "AWS::EC2::SecurityGroup"
+        },
+        "TownClock": {
+            "Properties": {
+                "Subscription": [
+                    {
+                        "Endpoint": {
+                            "Fn::GetAtt": [
+                                "containerLauncher",
+                                "Arn"
+                            ]
+                        },
+                        "Protocol": "lambda"
+                    }
+                ]
+            },
+            "Type": "AWS::SNS::Topic"
+        },
+        "containerLauncher": {
+            "Properties": {
+                "Code": {
+                    "S3Bucket": "hackathon-glueteam-lambda",
+                    "S3Key": {
+                        "Ref": "Containerlauncher"
+                    },
+                    "S3ObjectVersion": {
+                        "Ref": "ZipfileVersion"
+                    }
+                },
+                "Description": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            {
+                                "Ref": "StackName"
+                            },
+                            " container Launcher"
+                        ]
+                    ]
+                },
+                "Handler": "com.philips.glueteam.DockerLauncher::myHandler",
+                "MemorySize": 256,
+                "Role": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "arn:aws:iam::",
+                            {
+                                "Ref": "AWS::AccountId"
+                            },
+                            ":role/",
+                            {
+                                "Ref": "IamRole"
+                            }
+                        ]
+                    ]
+                },
+                "Runtime": "java8",
+                "Timeout": 60
+            },
+            "Type": "AWS::Lambda::Function"
+        }
+    }
+}

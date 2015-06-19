@@ -1,0 +1,63 @@
+#
+# ansible-playbook -i localhost-inventory build-step-serializer.yml
+#
+---
+- hosts: localhost
+  connection: local
+  gather_facts: False
+  vars:
+  - account: "{{ lookup('env','AWS_ACCOUNT_NAME') }}"
+  - subdomain: "" # subdomain if building non-production (named eg. "staging." with appended dot)
+  - serializer_stackname: "SampleSerializer"
+  vars_files:
+  - var_files/{{ lookup('env','AWS_ACCOUNT_NAME') }}-account.yml
+  - var_files/steppublisher.yml
+  tasks:
+  - name: Read outputs from Global Stack
+    read_cloudformation:
+      stack_name: "StepGlobals"
+      region: "{{ region }}"
+    register: step_globals
+
+  - name: Read outputs from stackname
+    read_cloudformation:
+      stack_name: "{{base_stackname}}"
+      region: "{{ region }}"
+    register: base_stack
+
+  - debug: var=step_globals
+
+  - debug: var=base_stack
+
+  - name: Upload cloudformation template to S3
+    command: aws s3 cp "{{ lookup('filepath', 'cf/stepserializer.json') }}" s3://{{bucketname}}/ --region "{{region}}"
+
+  - name: Run stepserializer cf template
+    cloudformation2:
+      stack_name: "{{base_stackname}}SampleSerializer"
+      state: present
+      region: "{{region}}"
+      template_url: "https://s3-{{region}}.amazonaws.com/{{bucketname}}/stepserializer.json"
+      template_parameters:
+        SerializerName: "{{ serializer_stackname }}"
+        StackName: "{{ base_stackname }}"
+        ClusterId: "{{ base_stack['stack_outputs']['clusterid'] }}"
+        RunLog: "{{ base_stack['stack_outputs']['runlog'] }}"
+        DirtyList: "{{ base_stack['stack_outputs']['dirtylist'] }}"
+        ExecutionRole: "{{ iamrole }}"
+      tags:
+        Stackname: "{{ base_stackname }}"
+        Customer: "Glueteam"
+    register: stepserializer
+
+  - name: Get temporary policy filename
+    command: mktemp -t "{{serializer_stackname}}-insert.json"
+    register: mktemp
+
+  - name: Create temporary json crontab entry file
+    template: src=templates/put_crontab_entry.json.j2 dest="{{ mktemp.stdout }}"
+
+  - name: Put serializer data in dynamodb table
+    command: aws dynamodb put-item --table-name {{step_globals['stack_outputs']['crontabtablename']}} --item "file://{{ mktemp.stdout }}"
+
+  - debug: var=stepserializer

@@ -1,0 +1,204 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+DOCUMENTATION = '''
+---
+module: ec2_iam_policy
+version_added: "1.9"
+short_description: maintain an iam policy.
+description:
+    - maintains simple iam policies. This module has a dependency on python-boto >= 2.5
+options:
+  name:
+    description:
+      - Name of the policy.
+    required: true
+  role:
+    description:
+      - Name of the role.
+    required: true
+  policy_document_filename:
+    description:
+      - filename of JSON-fomratted policy document.
+    required: false
+  region:
+    description:
+      - the EC2 region to use
+    required: false
+    default: null
+    aliases: []
+  state:
+    description:
+      - create or delete role policy
+    required: false
+    default: 'present'
+    aliases: []
+
+extends_documentation_fragment: aws
+author: Henning Kristensen
+'''
+
+EXAMPLES = '''
+# Note: None of these examples set aws_access_key, aws_secret_key, or region.
+# It is assumed that their matching environment variables are set.
+
+# Adds a policy to TestRole
+
+- name: Add read policy to TestRole
+  local_action:
+    module: ec2_iam_policy
+    role: TestRole
+    name: readpolicy
+    policy_document_filename: "files/read-policy.json"
+  register: policy
+
+# Removes read policy from TestRole
+
+- name: Remove readpolicy from TestRole
+  local_action:
+    module: ec2_iam_policy
+    role: TestRole
+    name: readpolicy
+    state: absent
+'''
+
+import sys
+
+try:
+    import boto.iam
+except ImportError:
+    print "failed=True msg='boto required for this module'"
+    sys.exit(1)
+
+import urllib
+
+def iam_connect(module):
+
+    """ Return an iam connection"""
+
+    region, ec2_url, boto_params = get_aws_connection_info(module)
+
+    # If we have a region specified, connect to its endpoint.
+    if region:
+        try:
+            iam = connect_to_aws(boto.iam, region, **boto_params)
+        except boto.exception.NoAuthHandlerFound, e:
+            module.fail_json(msg=str(e))
+    # Otherwise, no region so we fallback to the old connection method
+    else:
+        module.fail_json(msg="Region must be specified")
+
+    return iam
+
+
+def find_iam_role(iam, name):
+    # find the role if present
+    iamrole = None
+    try:
+        iamrole = iam.get_role(name)
+    except boto.exception.BotoServerError, e:
+        if e.status == 404:
+            pass
+        else:
+            raise e
+
+    return iamrole
+
+
+def main():
+    argument_spec = ec2_argument_spec()
+    argument_spec.update(dict(
+            name=dict(required=True),
+            role=dict(required=True),
+            policy_document_filename=dict(required=False),
+            state=dict(default='present', choices=['present', 'absent'])
+        )
+    )
+    module = AnsibleModule(
+        argument_spec=argument_spec,
+        supports_check_mode=True,
+    )
+
+    name = module.params['name']
+    state = module.params.get('state')
+    role = module.params['role']
+    policy_document_filename = module.params['policy_document_filename']
+
+    policy_document = None
+    if policy_document_filename:
+        with open(policy_document_filename, 'r') as policy_file:
+            policy_document = policy_file.read()
+
+    changed = False
+    data = {
+        'role': role,
+        'name': name,
+    }
+
+    if policy_document_filename:
+        data.update({'policy_document_filename': policy_document_filename})
+
+    iam = iam_connect(module)
+
+    iamrole = find_iam_role(iam, role)
+
+    iampolicy = None
+    if iamrole:
+        list_role_policies_response = iam.list_role_policies(role)
+        role_policy_names = list_role_policies_response['list_role_policies_response']['list_role_policies_result']['policy_names']
+        if name in role_policy_names:
+            iampolicy = iam.get_role_policy(role, name)
+            iampolicy_document = urllib.unquote(iampolicy['get_role_policy_response']['get_role_policy_result']['policy_document'])
+
+    # Ensure requested policy is absent
+    if state == 'absent':
+        if iamrole and iampolicy:
+            '''found the policy'''
+            try:
+                if not module.check_mode:
+                    iam.delete_role_policy(role, name)
+            except Exception, e:
+                module.fail_json(msg="Unable to delete policy '%s' on role %s: %s" % (name, role, e))
+            else:
+                if not module.check_mode:
+                    iampolicy = None
+                    changed = True
+        else:
+            '''no match found, no changes required'''
+
+    # Ensure the requested policy is present
+    elif state == 'present':
+        if iamrole and policy_document:
+            # role found, policy_document present
+            if policy_document:
+
+                if iampolicy and iampolicy_document == policy_document:
+                    '''policy_document already matches the iampolicy, nothing to do'''
+                    changed = False
+                else:
+                    '''policy document should be updated'''
+                    with tempfile.NamedTemporaryFile(delete=True) as temp:
+                        temp.file.write(policy_document)
+                        temp.file.flush()
+
+                        try:
+                            if not module.check_mode:
+                                iam.put_role_policy(role, name, policy_document)
+                        except Exception, e:
+                            module.fail_json(msg="%s Unable to put '%s' on role %s: %s" % (temp.name, name, role, e))
+                        else:
+                            if not module.check_mode:
+                                changed = True
+                                iampolicy = iam.get_role_policy(role, name)
+                                iampolicy_document = urllib.unquote(iampolicy['get_role_policy_response']['get_role_policy_result']['policy_document'])
+
+    if iampolicy:
+        data.update({'policy_document': iampolicy_document})
+
+    module.exit_json(changed=changed, policy=data)
+
+# import module snippets
+from ansible.module_utils.basic import *
+from ansible.module_utils.ec2 import *
+
+main()

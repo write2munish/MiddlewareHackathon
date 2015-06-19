@@ -1,0 +1,8 @@
+rootProject.name = 'hackaton'
+
+include 'containerLauncher'
+
+include 'stepSimulator'
+
+include 'gui'
+

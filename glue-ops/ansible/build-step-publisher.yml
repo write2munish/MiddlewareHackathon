@@ -1,0 +1,70 @@
+#
+# ansible-playbook -i localhost-inventory build-step-publisher.yml
+#
+---
+- hosts: localhost
+  connection: local
+  gather_facts: False
+  vars:
+  - account: "{{ lookup('env','AWS_ACCOUNT_NAME') }}"
+  - subdomain: "" # subdomain if building non-production (named eg. "staging." with appended dot)
+  vars_files:
+  - var_files/{{ lookup('env','AWS_ACCOUNT_NAME') }}-account.yml
+  - var_files/steppublisher.yml
+  tasks:
+  - name: Read outputs from Global Stack
+    read_cloudformation:
+      stack_name: "StepGlobals"
+      region: "{{ region }}"
+    register: step_globals
+
+  - debug: var=step_globals
+
+  - name: Create IAM Server role with instance profile
+    ec2_iam_role: name="{{iamrole}}" instanceprofile="yes" region="{{region}}"
+    register: iam
+
+  - name: Upload cloudformation template to S3
+    command: aws s3 cp "{{ lookup('filepath', 'cf/steppublisher.json') }}" s3://{{bucketname}}/ --region "{{region}}"
+
+  - name: Get latest version of lambda function code on s3
+    command: aws s3api list-object-versions --bucket hackathon-glueteam-lambda --prefix containerLauncher-1.0.zip --query Versions[0].VersionId --output text
+    register: zipfile_version
+
+  - name: Run steppublishing cf template
+    cloudformation2:
+      stack_name: "{{base_stackname}}"
+      state: present
+      region: "{{region}}"
+      template_url: "https://s3-{{region}}.amazonaws.com/{{bucketname}}/steppublisher.json"
+      template_parameters:
+        StackName: "{{ base_stackname }}"
+        KeyPair: "{{ keypair }}"
+        IamRole: "{{ iamrole }}"
+        CrontabTablename: "{{ step_globals['stack_outputs']['crontabtablename'] }}"
+        ZipfileVersion: "{{ zipfile_version.stdout }}"
+      tags:
+        Stackname: "{{ base_stackname }}"
+        Customer: "Glueteam"
+    register: steppublisher
+
+  - name: Get temporary policy filename
+    command: mktemp -t "{{base_stackname}}-policy.json"
+    register: mktemp
+
+  - name: Create temporary policy file
+    template: src=templates/stepscheduler-policy.json.j2 dest="{{ mktemp.stdout }}"
+
+  - name: Update IAM Policy for scheduler servers
+    local_action:
+      module: ec2_iam_policy
+      name: stepscheduler
+      role: "{{iamrole}}"
+      policy_document_filename: "{{ mktemp.stdout }}"
+      region: "{{region}}"
+
+#  - name: Attach Eventsource (not possible in Cloudformation at the moment)
+#    command: aws lambda create-event-source-mapping --event-source "{{ steppublisher['stack_outputs']['clocktowertopicarn'] }}" --function-name "{{ steppublisher['stack_outputs']['lambdafunctionname'] }}" --starting-position LATEST
+
+  - name: Attach Eventsource Manually (not possible in Cloudformation/CLI at the moment)
+    debug: msg="Please go to https://eu-west-1.console.aws.amazon.com/lambda/home?region=eu-west-1#/functions/{{ steppublisher['stack_outputs']['lambdafunctionname'] }} in order to subscribe the Lambda function to the ClockTower SNS topic"
